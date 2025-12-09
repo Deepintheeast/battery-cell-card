@@ -330,7 +330,7 @@ cells:
     entity: sensor.cell2
   - name: Zelle 3
     entity: sensor.cell3
-  # … weitere Zellen
+  … weitere Zellen
 
 Konfigurationsoptionen im Detail
 Option	Typ	Standard	Beschreibung
