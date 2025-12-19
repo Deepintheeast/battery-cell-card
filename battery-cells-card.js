@@ -398,31 +398,42 @@ class BatteryCellsCard extends HTMLElement {
         return legend;
     }
 
-    _createCell(cfg, width, height, gradientStr) {
-        const raw = this._hass.states[cfg.entity]?.state ?? '-';
-        const numeric = parseFloat(raw);
-        const isNum = !Number.isNaN(numeric);
+_createCell(cfg, width, height, gradientStr) {
+    const raw = this._hass.states[cfg.entity]?.state;
+    const numeric = Number(raw);
+    const isNum = Number.isFinite(numeric);
 
-        // PATCH v0.5.2: auto-detect Volt vs mV for bar calculation
-        let value = numeric;
-        if (isNum) {
-            if (this._config.cell_unit === 'mV') value = numeric;
-            else if (this._config.cell_unit === 'V') value = numeric * 1000;
-            else if (value < 30) value = value * 1000; // auto
+    // --- Einheit → mV normalisieren ---
+    let value = null;
+    if (isNum) {
+        if (this._config.cell_unit === 'mV') {
+            value = numeric;
+        } else if (this._config.cell_unit === 'V') {
+            value = numeric * 1000;
+        } else {
+            // auto
+            value = numeric < 10 ? numeric * 1000 : numeric;
         }
+    }
 
-        const display = isNum ? `${Math.round(value)} mV` : raw;
+    // --- Anzeige ---
+    const display = isNum
+        ? (value >= 1000
+            ? `${(value / 1000).toFixed(2)} V`
+            : `${Math.round(value)} mV`)
+        : raw ?? '-';
 
-        let fillPercent = 0;
-        if (isNum) {
-            if (value <= 2800) fillPercent = ((value - 2600)/200)*5;
-            else if (value <= 3000) fillPercent = ((value - 2800)/200)*5+5;
-            else if (value <= 3200) fillPercent = ((value - 3000)/200)*10+10;
-            else if (value <= 3380) fillPercent = ((value - 3200)/180)*60+20;
-            else if (value <= 3450) fillPercent = ((value - 3380)/70)*10+80;
-            else if (value <= 3550) fillPercent = ((value - 3450)/100)*5+90;
-            else fillPercent = ((value - 3550)/100)*5+95;
-        }
+    // --- Füllstand ---
+    let fillPercent = 0;
+    if (value != null) {
+        if (value <= 2800) fillPercent = ((value - 2600) / 200) * 5;
+        else if (value <= 3000) fillPercent = ((value - 2800) / 200) * 5 + 5;
+        else if (value <= 3200) fillPercent = ((value - 3000) / 200) * 10 + 10;
+        else if (value <= 3380) fillPercent = ((value - 3200) / 180) * 60 + 20;
+        else if (value <= 3450) fillPercent = ((value - 3380) / 70) * 10 + 80;
+        else if (value <= 3550) fillPercent = ((value - 3450) / 100) * 5 + 90;
+        else fillPercent = ((value - 3550) / 100) * 5 + 95;
+    }
         fillPercent = Math.max(0, Math.min(100, fillPercent));
 
         const cont = document.createElement('div');
